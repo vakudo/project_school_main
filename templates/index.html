@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Учет оборудования</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        <div>
+          <strong>ProdLog</strong>
+          <p>Учет оборудования</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="themeToggle" class="btn ghost icon-btn" aria-label="Переключить тему">
+          <span class="icon" aria-hidden="true">☀️</span>
+        </button>
+        <button class="btn ghost" id="exportBtn">Экспорт</button>
+        <button id="addQuickBtn" class="btn primary">Добавить</button>
+      </div>
+      <div class="user-box">
+        <div class="user-tag">{{ user }}</div>
+        <a class="btn ghost small" href="{{ url_for('logout') }}">Выход</a>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="hero">
+        <div class="hero-text">
+          <p class="eyebrow">Пилотный контур</p>
+          <h1>Контроль парка без хаоса</h1>
+          <p class="lede">Инвентарь, статус и ответственные по цехам — быстрое представление, которое будем расширять модулями планирования и ремонтами.</p>
+          <div class="pill-row">
+            <span class="pill">Статусы в реальном времени</span>
+            <span class="pill">Готово к API</span>
+            <span class="pill">Экспорт CSV/Excel</span>
+          </div>
+        </div>
+        <div class="hero-stats">
+          <div class="card stat-card">
+            <p class="muted">Всего единиц</p>
+            <strong id="statTotal">0</strong>
+          </div>
+          <div class="card stat-card">
+            <p class="muted">В работе</p>
+            <strong id="statActive">0</strong>
+          </div>
+          <div class="card stat-card">
+            <p class="muted">В ремонте</p>
+            <strong id="statRepair">0</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel filters">
+        <div class="field">
+          <label for="search">Поиск</label>
+          <input id="search" type="text" placeholder="Название, номер или сотрудник">
+        </div>
+        <div class="field">
+          <label for="locationFilter">Локация</label>
+          <select id="locationFilter">
+            <option value="">Все</option>
+          </select>
+        </div>
+        <button id="resetFilters" class="btn ghost full">Сбросить</button>
+      </section>
+
+      <section class="panel list-panel">
+        <div class="tabbar" id="statusTabs">
+          <button class="tab-btn active" data-status="">Все</button>
+          <button class="tab-btn" data-status="active">Выдано</button>
+          <button class="tab-btn" data-status="idle">Склад</button>
+          <button class="tab-btn" data-status="repair">Обслуживание</button>
+          <button class="tab-btn" data-status="assigned">Назначено мне</button>
+        </div>
+        <header class="panel-header">
+          <div>
+            <p class="muted">Оборудование</p>
+            <h2>Текущий список</h2>
+          </div>
+          <div class="legend">
+            <span class="chip status active">Выдано</span>
+            <span class="chip status idle">Склад</span>
+            <span class="chip status repair">Обслуживание</span>
+          </div>
+        </header>
+        <div id="equipmentBody" class="card-grid"></div>
+      </section>
+
+      <section class="panel form-panel" id="formPanel">
+        <header class="panel-header">
+          <div>
+            <p class="muted">Новая единица</p>
+            <h2>Добавить оборудование</h2>
+            <p class="muted">Все новые позиции поступают на склад. Выдачу/обслуживание меняем через карточку.</p>
+          </div>
+        </header>
+        <form id="addForm" class="form-grid">
+          <label class="field">
+            <span>Название</span>
+            <input name="name" required placeholder="Например, Сварочный аппарат">
+          </label>
+          <label class="field">
+            <span>Инвентарный номер</span>
+            <input name="serial" required placeholder="INV-2025-014">
+          </label>
+          <label class="field">
+            <span>Локация</span>
+            <input name="location" required placeholder="Цех 3 / Участок сварки">
+          </label>
+          <label class="field">
+            <span>Ответственный</span>
+            <input name="owner" required placeholder="Иванов И.И.">
+          </label>
+          <label class="field full">
+            <span>Комментарий</span>
+            <textarea name="note" rows="2" placeholder="Небольшое описание или условия эксплуатации"></textarea>
+          </label>
+          <input type="hidden" name="status" value="idle">
+          <div class="form-actions">
+            <button type="submit" class="btn primary">Сохранить</button>
+            <button type="button" id="cancelForm" class="btn ghost">Отмена</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast">Сохранено</div>
+
+  <div id="serviceModal" class="modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Назначить обслуживание</h3>
+        <button type="button" class="btn ghost icon-btn" id="serviceClose" aria-label="Закрыть">✕</button>
+      </div>
+      <form id="serviceForm" class="form-grid">
+        <label class="field">
+          <span>Ответственный</span>
+          <input id="serviceOwner" name="serviceOwner" required placeholder="email или ФИО">
+        </label>
+        <label class="field">
+          <span>Телефон</span>
+          <input id="servicePhone" name="servicePhone" required placeholder="+7 (___) ___-__-__">
+        </label>
+        <label class="field full">
+          <span>Комментарий</span>
+          <textarea id="serviceNote" name="serviceNote" rows="2" placeholder="Что нужно сделать"></textarea>
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn primary">Сохранить</button>
+          <button type="button" class="btn ghost" id="serviceCancel">Отмена</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="issueModal" class="modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Выдать оборудование</h3>
+        <button type="button" class="btn ghost icon-btn" id="issueClose" aria-label="Закрыть">✕</button>
+      </div>
+      <form id="issueForm" class="form-grid">
+        <label class="field">
+          <span>Получатель</span>
+          <input id="issueOwner" name="issueOwner" required placeholder="ФИО или email">
+        </label>
+        <label class="field">
+          <span>Телефон</span>
+          <input id="issuePhone" name="issuePhone" required placeholder="+7 (___) ___-__-__">
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn primary">Выдать</button>
+          <button type="button" class="btn ghost" id="issueCancel">Отмена</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="exportModal" class="modal">
+    <div class="modal-card export-card">
+      <div class="modal-header">
+        <h3>Экспорт данных</h3>
+        <button type="button" class="btn ghost icon-btn" id="exportClose" aria-label="Закрыть">✕</button>
+      </div>
+      <form id="exportForm" class="form-grid">
+        <p class="muted small-text">Данные выгружаются с учетом выбранных фильтров и вкладки.</p>
+        <div class="field full export-block">
+          <span class="section-title">Поля для выгрузки</span>
+          <div class="checkbox-grid">
+            <label><input type="checkbox" name="fields" value="name" checked> Название</label>
+            <label><input type="checkbox" name="fields" value="serial" checked> Инв. номер</label>
+            <label><input type="checkbox" name="fields" value="location" checked> Локация</label>
+            <label><input type="checkbox" name="fields" value="owner" checked> Ответственный</label>
+            <label><input type="checkbox" name="fields" value="ownerPhone" checked> Телефон ответственного</label>
+            <label><input type="checkbox" name="fields" value="status" checked> Статус</label>
+            <label><input type="checkbox" name="fields" value="serviceOwner" checked> Ответственный за обслуживание</label>
+            <label><input type="checkbox" name="fields" value="servicePhone" checked> Телефон обслуживания</label>
+            <label><input type="checkbox" name="fields" value="note"> Комментарий</label>
+          </div>
+        </div>
+        <div class="field">
+          <span class="section-title">Формат файла</span>
+          <div class="radio-row">
+            <label><input type="radio" name="format" value="xlsx" checked> Excel (.xlsx)</label>
+            <label><input type="radio" name="format" value="csv"> CSV</label>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn primary">Скачать</button>
+          <button type="button" class="btn ghost" id="exportCancel">Отмена</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    window.CURRENT_USER = "{{ user }}";
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

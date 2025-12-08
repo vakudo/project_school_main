@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Вход | ProdLog</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+  <script>
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  </script>
+</head>
+<body class="auth">
+  <div class="auth-shell">
+    <div class="auth-card panel">
+      <p class="eyebrow">ProdLog</p>
+      <h1>Вход</h1>
+      <p class="lede">Доступ только по учетной записи. Используйте корпоративные креды пилота.</p>
+      {% if error %}
+        <div class="alert">{{ error }}</div>
+      {% endif %}
+      <form method="post" class="form-grid auth-form">
+        <label class="field">
+          <span>Почта</span>
+          <input name="email" type="email" required placeholder="admin@example.com">
+        </label>
+        <label class="field">
+          <span>Пароль</span>
+          <input name="password" type="password" required placeholder="••••••••">
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn primary">Войти</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
