@@ -25,6 +25,7 @@
         </button>
         <button class="btn ghost" id="exportBtn">Экспорт</button>
         <button id="addQuickBtn" class="btn primary">Добавить</button>
+        <a class="btn ghost" href="{{ url_for('scan') }}">Сканер</a>
       </div>
       <div class="user-box">
         <div class="user-tag">{{ user }}</div>
@@ -36,7 +37,7 @@
       <section class="hero">
         <div class="hero-text">
           <p class="eyebrow">Пилотный контур</p>
-          <h1>Контроль парка без хаоса</h1>
+          <h1>ProdLog</h1>
           <p class="lede">Инвентарь, статус и ответственные по цехам — быстрое представление, которое будем расширять модулями планирования и ремонтами.</p>
           <div class="pill-row">
             <span class="pill">Статусы в реальном времени</span>
@@ -132,10 +133,76 @@
           </div>
         </form>
       </section>
+      {% if is_admin %}
+      <section class="panel form-panel" id="accountsSection">
+        <header class="panel-header">
+          <div>
+            <p class="muted">Управление доступом</p>
+            <h2>Учётные записи</h2>
+            <p class="muted">Добавляйте новых пользователей и редактируйте их роль или пароль прямо отсюда.</p>
+          </div>
+        </header>
+        <form id="accountForm" class="form-grid">
+          <label class="field">
+            <span>Email</span>
+            <input name="email" type="email" required placeholder="user@example.com">
+          </label>
+          <label class="field">
+            <span>Пароль</span>
+            <input name="password" type="text" required placeholder="минимум 4 символа">
+          </label>
+          <label class="field">
+            <span>Роль</span>
+            <select name="role">
+              <option value="user">Пользователь</option>
+              <option value="admin">Администратор</option>
+            </select>
+          </label>
+          <div class="form-actions">
+            <button type="submit" class="btn primary">Добавить аккаунт</button>
+            <button type="button" id="accountFormReset" class="btn ghost">Очистить</button>
+          </div>
+        </form>
+        <div id="accountList" class="account-list"></div>
+      </section>
+      {% endif %}
     </main>
   </div>
 
   <div id="toast" class="toast">Сохранено</div>
+
+  {% if is_admin %}
+  <div id="accountModal" class="modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Редактировать учётную запись</h3>
+        <button type="button" class="btn ghost icon-btn" id="accountClose" aria-label="Закрыть">×</button>
+      </div>
+      <form id="accountEditForm" class="form-grid">
+        <input type="hidden" id="accountEditId">
+        <label class="field">
+          <span>Email</span>
+          <input id="accountEditEmail" type="email" required>
+        </label>
+        <label class="field">
+          <span>Новый пароль</span>
+          <input id="accountEditPassword" type="text" placeholder="оставьте пустым, если не менять">
+        </label>
+        <label class="field">
+          <span>Роль</span>
+          <select id="accountEditRole">
+            <option value="user">Пользователь</option>
+            <option value="admin">Администратор</option>
+          </select>
+        </label>
+        <div class="form-actions">
+          <button type="submit" class="btn primary">Сохранить</button>
+          <button type="button" class="btn ghost" id="accountCancel">Отмена</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
 
   <div id="serviceModal" class="modal">
     <div class="modal-card">
@@ -226,6 +293,7 @@
 
   <script>
     window.CURRENT_USER = "{{ user }}";
+    window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};
   </script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="{{ url_for('static', filename='app.js') }}"></script>

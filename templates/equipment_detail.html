@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Карточка оборудования</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    .detail-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 16px;
+      background: radial-gradient(circle at 20% 20%, rgba(73, 92, 255, 0.06), transparent 32%),
+                  radial-gradient(circle at 80% 0%, rgba(54, 211, 153, 0.08), transparent 26%),
+                  var(--page-bg, #0b0c10);
+      color: #0c1018;
+    }
+    .detail-card {
+      background: #fff;
+      border: 1px solid #e6e8ef;
+      box-shadow: 0 20px 50px rgba(14, 23, 40, 0.1);
+      border-radius: 20px;
+      padding: 32px;
+      width: min(920px, 100%);
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 24px;
+    }
+    .detail-card h1 { margin: 0 0 8px; }
+    .detail-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 16px 0 8px;
+    }
+    .meta {
+      padding: 12px;
+      background: #f8f9fb;
+      border-radius: 12px;
+      border: 1px dashed #e3e6f0;
+    }
+    .meta span { display: block; color: #6c7280; font-size: 14px; margin-bottom: 4px; }
+    .qr-box {
+      background: #f5f7ff;
+      border: 1px solid #dfe4ff;
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+    }
+    .qr-box img { width: 220px; height: 220px; object-fit: contain; }
+    .chip.small { padding: 4px 10px; font-size: 12px; }
+    .actions { display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+    .not-found {
+      background: #fff6f6;
+      border: 1px solid #ffd5d5;
+      color: #a31b1b;
+      padding: 18px 24px;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="detail-page">
+    {% if not item %}
+      <div class="not-found">
+        <strong>Оборудование не найдено.</strong>
+        <div>Проверьте ссылку из QR-кода или попросите технику выдать новую наклейку.</div>
+      </div>
+    {% else %}
+      <div class="detail-card">
+        <div>
+          <p class="muted" style="margin:0">Карточка оборудования</p>
+          <h1>{{ item.name }}</h1>
+          <div class="detail-meta">
+            <div class="meta">
+              <span>Инвентарный №</span>
+              <strong>{{ item.serial }}</strong>
+            </div>
+            <div class="meta">
+              <span>Локация</span>
+              <strong>{{ item.location }}</strong>
+            </div>
+            <div class="meta">
+              <span>Ответственный</span>
+              <strong>{{ item.owner }}{% if item.ownerPhone %} · {{ item.ownerPhone }}{% endif %}</strong>
+            </div>
+            <div class="meta">
+              <span>Статус</span>
+              <span class="chip status {{ item.status }}" style="display:inline-flex;">{{ {'active':'В работе','idle':'Свободен','repair':'Сервис'}.get(item.status, item.status) }}</span>
+            </div>
+          </div>
+          <div class="meta">
+            <span>Примечание</span>
+            <div>{{ item.note or "Пока нет заметок" }}</div>
+          </div>
+          {% if item.serviceOwner %}
+            <div class="meta">
+              <span>Сервис</span>
+              <div>{{ item.serviceOwner }}{% if item.servicePhone %} · {{ item.servicePhone }}{% endif %}</div>
+            </div>
+          {% endif %}
+          <div class="actions">
+            <a class="btn primary" href="{{ item.label_url }}" target="_blank">Печать наклейки</a>
+            <a class="btn ghost" href="{{ url_for('index') }}">К панели</a>
+          </div>
+        </div>
+        <div class="qr-box">
+          <p class="muted" style="margin:0 0 8px;">QR для этого оборудования</p>
+          <img src="{{ item.qr_url }}" alt="QR код">
+          <div class="small-text muted" style="margin-top:8px;">Сканируйте, чтобы открыть эту карточку</div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</body>
+</html>

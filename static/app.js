@@ -1,13 +1,5 @@
-const sampleData = [
-  { name: 'Сварочный аппарат Lincoln', serial: 'INV-2025-014', location: 'Цех 3 / Сварка', owner: 'Иванов И.И.', ownerPhone: '+7 900 000-10-10', status: 'active', note: 'Смена насадки раз в неделю', serviceOwner: '', servicePhone: '' },
-  { name: 'Компрессор Atlas', serial: 'INV-2024-102', location: 'Цех 1 / Компрессоры', owner: 'Петров А.А.', ownerPhone: '+7 900 000-10-11', status: 'repair', note: 'Ожидает клапан', serviceOwner: 'techlead@example.com', servicePhone: '+7 900 000-00-01' },
-  { name: 'Гидравлический пресс', serial: 'INV-2023-310', location: 'Цех 2 / Пресс', owner: 'Сидоров С.С.', ownerPhone: '+7 900 000-10-12', status: 'idle', note: '', serviceOwner: '', servicePhone: '' },
-  { name: 'Шлифовальный станок', serial: 'INV-2025-021', location: 'Цех 4 / Мехобработка', owner: 'Кузнецов Д.Д.', ownerPhone: '+7 900 000-10-13', status: 'active', note: 'Нужен ежедневный осмотр', serviceOwner: '', servicePhone: '' },
-  { name: 'Погрузчик Still', serial: 'INV-2024-210', location: 'Склад', owner: 'Горбунов В.В.', ownerPhone: '+7 900 000-10-14', status: 'active', note: 'Резервный аккумулятор', serviceOwner: '', servicePhone: '' },
-  { name: 'Лазерный резак', serial: 'INV-2024-450', location: 'Цех 4 / Резка', owner: 'Ким Е.Е.', ownerPhone: '+7 900 000-10-15', status: 'repair', note: 'Настройка оптики', serviceOwner: 'service@example.com', servicePhone: '+7 900 000-00-02' },
-];
-
-let equipment = [...sampleData];
+let equipment = [];
+let userAccounts = [];
 
 const bodyEl = document.getElementById('equipmentBody');
 const searchEl = document.getElementById('search');
@@ -33,7 +25,7 @@ const serviceForm = document.getElementById('serviceForm');
 const serviceOwnerInput = document.getElementById('serviceOwner');
 const servicePhoneInput = document.getElementById('servicePhone');
 const serviceNoteInput = document.getElementById('serviceNote');
-let modalTargetSerial = null;
+let modalTargetId = null;
 const issueModal = document.getElementById('issueModal');
 const issueClose = document.getElementById('issueClose');
 const issueCancel = document.getElementById('issueCancel');
@@ -45,29 +37,90 @@ const exportClose = document.getElementById('exportClose');
 const exportCancel = document.getElementById('exportCancel');
 const exportForm = document.getElementById('exportForm');
 const exportBtn = document.getElementById('exportBtn');
+const isAdmin = Boolean(window.IS_ADMIN);
+const accountForm = document.getElementById('accountForm');
+const accountFormReset = document.getElementById('accountFormReset');
+const accountListEl = document.getElementById('accountList');
+const accountModal = document.getElementById('accountModal');
+const accountClose = document.getElementById('accountClose');
+const accountCancel = document.getElementById('accountCancel');
+const accountEditForm = document.getElementById('accountEditForm');
+const accountEditId = document.getElementById('accountEditId');
+const accountEditEmail = document.getElementById('accountEditEmail');
+const accountEditPassword = document.getElementById('accountEditPassword');
+const accountEditRole = document.getElementById('accountEditRole');
+
+async function loadEquipment() {
+  try {
+    const res = await fetch('/api/equipment');
+    if (!res.ok) throw new Error('load_failed');
+    const data = await res.json();
+    equipment = data.items || [];
+    render();
+  } catch (err) {
+    console.error(err);
+    showToast('Не удалось загрузить оборудование');
+  }
+}
+
+async function loadAccounts() {
+  if (!isAdmin || !accountListEl) return;
+  try {
+    const res = await fetch('/api/accounts');
+    if (!res.ok) throw new Error('load_accounts_failed');
+    const data = await res.json();
+    userAccounts = data.accounts || [];
+    renderAccounts();
+  } catch (err) {
+    console.error(err);
+    showToast('Не удалось загрузить учётные записи');
+  }
+}
 
 function render() {
   const rows = filteredData().map(item => `
     <div class="row">
       <div>
         <div>${item.name}</div>
-        <div class="muted">${item.note || 'Без комментария'}</div>
+        <div class="muted">${item.note || 'Пока нет примечаний'}</div>
       </div>
       <div class="muted">${item.serial}</div>
-      <div>${item.location}</div>
-      <div>${item.owner || 'Не назначен'} ${item.ownerPhone ? '• ' + item.ownerPhone : ''}</div>
+      <div>${item.location || '—'}</div>
+      <div>${item.owner || '—'}${item.ownerPhone ? ' · ' + item.ownerPhone : ''}</div>
       <div><span class="chip status ${item.status}">${statusLabel(item.status)}</span></div>
-      ${item.serviceOwner ? `<div class="muted service-line">Обслуживает: ${item.serviceOwner} ${item.servicePhone ? '• ' + item.servicePhone : ''}</div>` : ''}
+      ${item.serviceOwner ? `<div class="muted service-line">Сервис: ${item.serviceOwner}${item.servicePhone ? ' · ' + item.servicePhone : ''}</div>` : ''}
       <div class="row-actions">
-        <button class="btn ghost small" data-action="issue" data-serial="${item.serial}">Выдать</button>
-        <button class="btn ghost small" data-action="stock" data-serial="${item.serial}">На склад</button>
-        <button class="btn ghost small" data-action="service" data-serial="${item.serial}">Обслуживание</button>
+        <button class="btn ghost small" data-action="issue" data-id="${item.id}">Выдать</button>
+        <button class="btn ghost small" data-action="stock" data-id="${item.id}">Вернуть</button>
+        <button class="btn ghost small" data-action="service" data-id="${item.id}">Сервис</button>
+        <button class="btn ghost small" data-action="label" data-id="${item.id}">QR/печать</button>
       </div>
     </div>
   `);
   bodyEl.innerHTML = rows.join('') || `<div class="row"><div>Ничего не найдено</div></div>`;
   updateStats();
   fillLocationFilter();
+}
+
+function renderAccounts() {
+  if (!accountListEl) return;
+  if (!userAccounts.length) {
+    accountListEl.innerHTML = '<div class="muted">Пока нет дополнительных учётных записей</div>';
+    return;
+  }
+  const rows = userAccounts.map(acc => `
+    <div class="account-item" data-id="${acc.id}">
+      <div>
+        <div>${acc.email}</div>
+        <div class="muted">${roleLabel(acc.role)}</div>
+      </div>
+      <div class="account-actions">
+        <span class="account-role">${roleLabel(acc.role)}</span>
+        <button class="btn ghost small" data-action="edit-account" data-id="${acc.id}">Изменить</button>
+      </div>
+    </div>
+  `);
+  accountListEl.innerHTML = rows.join('');
 }
 
 function filteredData() {
@@ -88,11 +141,15 @@ function filteredData() {
 
 function statusLabel(code) {
   switch (code) {
-    case 'active': return 'Выдано';
-    case 'idle': return 'Склад';
-    case 'repair': return 'Обслуживание';
+    case 'active': return 'В работе';
+    case 'idle': return 'Свободен';
+    case 'repair': return 'Сервис';
     default: return code;
   }
+}
+
+function roleLabel(role) {
+  return role === 'admin' ? 'Администратор' : 'Пользователь';
 }
 
 function updateStats() {
@@ -102,7 +159,7 @@ function updateStats() {
 }
 
 function fillLocationFilter() {
-  const unique = Array.from(new Set(equipment.map(i => i.location)));
+  const unique = Array.from(new Set(equipment.map(i => i.location).filter(Boolean)));
   const options = ['<option value="">Все</option>', ...unique.map(loc => `<option value="${loc}">${loc}</option>`)];
   const current = locationFilterEl.value;
   locationFilterEl.innerHTML = options.join('');
@@ -115,21 +172,105 @@ function showToast(message) {
   setTimeout(() => toastEl.classList.remove('show'), 1600);
 }
 
-function addEquipment(formData) {
-  const item = {
+async function addEquipment(formData) {
+  const payload = {
     name: formData.get('name'),
     serial: formData.get('serial'),
     location: formData.get('location'),
     owner: formData.get('owner'),
-    ownerPhone: '',
-    status: 'idle',
     note: formData.get('note') || '',
-    serviceOwner: '',
-    servicePhone: '',
   };
-  equipment = [item, ...equipment];
+  const res = await fetch('/api/equipment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    showToast('Не удалось добавить оборудование');
+    return;
+  }
+  const data = await res.json();
+  const newItem = data.item;
+  equipment = [newItem, ...equipment];
   render();
-  showToast('Сохранено');
+  showToast('Оборудование добавлено, QR готов');
+}
+
+async function persistUpdate(id, changes) {
+  const res = await fetch(`/api/equipment/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(changes),
+  });
+  if (!res.ok) throw new Error('update_failed');
+  const data = await res.json();
+  const updated = data.item;
+  equipment = equipment.map(i => i.id === id ? updated : i);
+  render();
+}
+
+async function createAccount(formData) {
+  const payload = {
+    email: formData.get('email'),
+    password: formData.get('password'),
+    role: formData.get('role') || 'user',
+  };
+  const res = await fetch('/api/accounts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    let message = 'Не удалось создать учётную запись';
+    try {
+      const err = await res.json();
+      if (err?.error === 'email_exists') message = 'Такой email уже используется';
+    } catch (e) {
+      // ignore parse errors
+    }
+    showToast(message);
+    return;
+  }
+  const data = await res.json();
+  if (data.account) {
+    userAccounts = [data.account, ...userAccounts];
+    renderAccounts();
+    showToast('Учётная запись добавлена');
+  }
+}
+
+async function updateAccount(id, payload) {
+  const res = await fetch(`/api/accounts/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    let message = 'Не удалось обновить учётную запись';
+    try {
+      const err = await res.json();
+      if (err?.error === 'email_exists') message = 'Такой email уже используется';
+    } catch (e) {
+      // ignore parse errors
+    }
+    showToast(message);
+    throw new Error('account_update_failed');
+  }
+  const data = await res.json();
+  if (data.account) {
+    userAccounts = userAccounts.map(acc => acc.id === id ? data.account : acc);
+    renderAccounts();
+    showToast('Учётная запись обновлена');
+  }
+}
+
+function openAccountModal(account) {
+  if (!accountModal || !account) return;
+  accountEditId.value = account.id;
+  accountEditEmail.value = account.email || '';
+  accountEditPassword.value = '';
+  accountEditRole.value = account.role || 'user';
+  accountModal.classList.add('show');
 }
 
 searchEl.addEventListener('input', render);
@@ -142,10 +283,10 @@ resetFiltersEl.addEventListener('click', () => {
   render();
 });
 
-form.addEventListener('submit', (e) => {
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
   const data = new FormData(form);
-  addEquipment(data);
+  await addEquipment(data);
   form.reset();
 });
 
@@ -157,13 +298,37 @@ cancelForm.addEventListener('click', () => {
   form.reset();
 });
 
+if (accountForm && isAdmin) {
+  accountForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const data = new FormData(accountForm);
+    await createAccount(data);
+    accountForm.reset();
+  });
+}
+
+if (accountFormReset && accountForm && isAdmin) {
+  accountFormReset.addEventListener('click', () => {
+    accountForm.reset();
+  });
+}
+
+if (accountListEl && isAdmin) {
+  accountListEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-action="edit-account"]');
+    if (!btn) return;
+    const acc = userAccounts.find(item => item.id === btn.dataset.id);
+    if (acc) openAccountModal(acc);
+  });
+}
+
 function setTheme(theme) {
   root.setAttribute('data-theme', theme);
   localStorage.setItem('theme', theme);
   if (themeToggle) {
     const icon = themeToggle.querySelector('.icon');
     if (icon) icon.textContent = theme === 'dark' ? '🌙' : '☀️';
-    themeToggle.setAttribute('aria-label', theme === 'dark' ? 'Светлая тема' : 'Темная тема');
+    themeToggle.setAttribute('aria-label', theme === 'dark' ? 'Переключить на светлую тему' : 'Переключить на тёмную тему');
   }
 }
 
@@ -185,83 +350,119 @@ tabButtons.forEach(btn => {
   });
 });
 
-bodyEl.addEventListener('click', (e) => {
+bodyEl.addEventListener('click', async (e) => {
   const btn = e.target.closest('button[data-action]');
   if (!btn) return;
-  const serial = btn.dataset.serial;
+  const id = btn.dataset.id;
   const action = btn.dataset.action;
-  const item = equipment.find(i => i.serial === serial);
+  const item = equipment.find(i => i.id === id);
   if (!item) return;
 
+  if (action === 'label') {
+    const url = item.label_url || `/equipment/${id}/label`;
+    window.open(url, '_blank');
+    return;
+  }
+
   if (action === 'issue') {
-    modalTargetSerial = serial;
+    modalTargetId = id;
     issueOwnerInput.value = item.owner || '';
     issuePhoneInput.value = item.ownerPhone || '';
     issueModal.classList.add('show');
+    return;
   }
 
   if (action === 'stock') {
-    item.status = 'idle';
-    item.serviceOwner = '';
-    item.servicePhone = '';
+    try {
+      await persistUpdate(id, { status: 'idle', serviceOwner: '', servicePhone: '' });
+      showToast('Переведено в склад');
+    } catch (err) {
+      showToast('Не удалось обновить');
+    }
+    return;
   }
 
   if (action === 'service') {
-    modalTargetSerial = serial;
+    modalTargetId = id;
     serviceOwnerInput.value = item.serviceOwner || currentUser || '';
     servicePhoneInput.value = item.servicePhone || '';
     serviceNoteInput.value = item.note || '';
     serviceModal.classList.add('show');
+    return;
   }
-
-  render();
-  showToast('Статус обновлен');
 });
 
 function closeModal(modalEl) {
   modalEl.classList.remove('show');
-  modalTargetSerial = null;
+  modalTargetId = null;
 }
 
-[serviceClose, serviceCancel].forEach(btn => btn.addEventListener('click', () => closeModal(serviceModal)));
-[issueClose, issueCancel].forEach(btn => btn.addEventListener('click', () => closeModal(issueModal)));
-[exportClose, exportCancel].forEach(btn => btn.addEventListener('click', () => closeModal(exportModal)));
+[serviceClose, serviceCancel].forEach(btn => btn && btn.addEventListener('click', () => closeModal(serviceModal)));
+[issueClose, issueCancel].forEach(btn => btn && btn.addEventListener('click', () => closeModal(issueModal)));
+[exportClose, exportCancel].forEach(btn => btn && btn.addEventListener('click', () => closeModal(exportModal)));
+[accountClose, accountCancel].forEach(btn => btn && btn.addEventListener('click', () => closeModal(accountModal)));
 
 serviceModal.addEventListener('click', (e) => { if (e.target === serviceModal) closeModal(serviceModal); });
 issueModal.addEventListener('click', (e) => { if (e.target === issueModal) closeModal(issueModal); });
 exportModal.addEventListener('click', (e) => { if (e.target === exportModal) closeModal(exportModal); });
+if (accountModal) {
+  accountModal.addEventListener('click', (e) => { if (e.target === accountModal) closeModal(accountModal); });
+}
 
-serviceForm.addEventListener('submit', (e) => {
+if (accountEditForm && isAdmin) {
+  accountEditForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const accountId = accountEditId.value;
+    if (!accountId) return closeModal(accountModal);
+    const payload = {
+      email: accountEditEmail.value.trim(),
+      role: accountEditRole.value,
+    };
+    if (accountEditPassword.value.trim()) {
+      payload.password = accountEditPassword.value.trim();
+    }
+    try {
+      await updateAccount(accountId, payload);
+    } catch (err) {
+      // toast already показан в updateAccount
+    }
+    closeModal(accountModal);
+  });
+}
+
+serviceForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!modalTargetSerial) return closeModal(serviceModal);
-  const item = equipment.find(i => i.serial === modalTargetSerial);
-  if (!item) return closeModal(serviceModal);
-
-  item.serviceOwner = serviceOwnerInput.value.trim();
-  item.servicePhone = servicePhoneInput.value.trim();
-  item.note = serviceNoteInput.value.trim();
-  item.status = 'repair';
-
+  if (!modalTargetId) return closeModal(serviceModal);
+  try {
+    await persistUpdate(modalTargetId, {
+      serviceOwner: serviceOwnerInput.value.trim(),
+      servicePhone: servicePhoneInput.value.trim(),
+      note: serviceNoteInput.value.trim(),
+      status: 'repair',
+    });
+    showToast('Передано в сервис, QR обновлен');
+  } catch (err) {
+    showToast('Не удалось обновить');
+  }
   closeModal(serviceModal);
-  render();
-  showToast('Статус обновлен');
 });
 
-issueForm.addEventListener('submit', (e) => {
+issueForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!modalTargetSerial) return closeModal(issueModal);
-  const item = equipment.find(i => i.serial === modalTargetSerial);
-  if (!item) return closeModal(issueModal);
-
-  item.owner = issueOwnerInput.value.trim();
-  item.ownerPhone = issuePhoneInput.value.trim();
-  item.status = 'active';
-  item.serviceOwner = '';
-  item.servicePhone = '';
-
+  if (!modalTargetId) return closeModal(issueModal);
+  try {
+    await persistUpdate(modalTargetId, {
+      owner: issueOwnerInput.value.trim(),
+      ownerPhone: issuePhoneInput.value.trim(),
+      status: 'active',
+      serviceOwner: '',
+      servicePhone: '',
+    });
+    showToast('Оборудование выдано');
+  } catch (err) {
+    showToast('Не удалось обновить');
+  }
   closeModal(issueModal);
-  render();
-  showToast('Статус обновлен');
 });
 
 if (exportBtn) {
@@ -282,7 +483,7 @@ exportForm.addEventListener('submit', (e) => {
   });
 
   if (data.length === 0) {
-    showToast('Нет данных для экспорта');
+    showToast('Нет данных для выгрузки');
     return;
   }
 
@@ -296,15 +497,15 @@ exportForm.addEventListener('submit', (e) => {
 
 function fieldLabel(key) {
   const map = {
-    name: 'Название',
+    name: 'Наименование',
     serial: 'Инв. номер',
     location: 'Локация',
     owner: 'Ответственный',
     ownerPhone: 'Телефон ответственного',
     status: 'Статус',
-    serviceOwner: 'Обслуживание — ответственный',
-    servicePhone: 'Обслуживание — телефон',
-    note: 'Комментарий',
+    serviceOwner: 'Сервис',
+    servicePhone: 'Телефон сервиса',
+    note: 'Примечание',
   };
   return map[key] || key;
 }
@@ -331,4 +532,7 @@ function downloadXLSX(data) {
   XLSX.writeFile(wb, 'equipment.xlsx');
 }
 
-render();
+loadEquipment();
+if (isAdmin) {
+  loadAccounts();
+}

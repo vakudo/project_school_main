@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Сканер QR</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    body { display:flex; align-items:center; justify-content:center; min-height:100vh; background:#0b0c10; }
+    .scan-card {
+      background:#0f172a;
+      color:#f8fafc;
+      width:min(720px, 100%);
+      border-radius:20px;
+      padding:24px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.35);
+    }
+    .scan-grid { display:grid; grid-template-columns: 2fr 1fr; gap:18px; }
+    video { width:100%; border-radius:14px; background:#111827; }
+    .input-box { background:#111827; padding:14px; border-radius:14px; border:1px dashed #1f2937; }
+    .pill { display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid #334155; }
+    .status-line { margin-top:8px; }
+    .small-muted { color:#94a3b8; font-size:13px; }
+    .btn-link { color:#38bdf8; text-decoration:none; }
+    @media(max-width: 760px){ .scan-grid { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="scan-card">
+    <div class="scan-grid">
+      <div>
+        <p class="pill">Поддержка: камера + ручные сканеры</p>
+        <h1 style="margin:10px 0 6px;">Сканер QR / штрих-кодов</h1>
+        <p class="small-muted">Наведи камеру или сканируй ручным сканером: вставь курсор в поле ввода, направь сканер, нажми триггер — мы откроем карточку.</p>
+        <video id="preview" muted playsinline></video>
+        <div class="status-line small-muted" id="cameraStatus">Инициализация камеры…</div>
+      </div>
+      <div>
+        <div class="input-box">
+          <label for="codeInput" class="small-muted">Поле для ручного сканера</label>
+          <input id="codeInput" type="text" placeholder="Сканируйте код" style="width:100%; margin-top:6px; padding:12px; border-radius:10px; border:1px solid #334155; background:#0b1220; color:#fff;">
+          <div class="small-muted" style="margin-top:6px;">После скана нажмите Enter, если сканер сам не отправляет.</div>
+        </div>
+        <div id="scanResult" class="status-line small-muted">Ожидаю скан…</div>
+        <div style="margin-top:12px;">
+          <a class="btn-link" href="{{ url_for('index') }}">← Назад к панели</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
+  <script src="{{ url_for('static', filename='scan.js') }}"></script>
+</body>
+</html>

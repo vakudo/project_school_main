@@ -1,0 +1,62 @@
+[
+  {
+    "id": "a03f5ab984",
+    "name": "jklasdj",
+    "serial": "123124",
+    "location": "adf",
+    "owner": "nfds f",
+    "ownerPhone": "8798",
+    "status": "idle",
+    "note": "",
+    "serviceOwner": "",
+    "servicePhone": ""
+  },
+  {
+    "id": "ddb9e11e23",
+    "name": "fewaf",
+    "serial": "213",
+    "location": "asd",
+    "owner": "12",
+    "ownerPhone": "",
+    "status": "idle",
+    "note": "",
+    "serviceOwner": "",
+    "servicePhone": ""
+  },
+  {
+    "id": "demo-a1",
+    "name": "Тележка штабелер Lincoln",
+    "serial": "INV-2025-014",
+    "location": "Цех 3 / Зона погрузки",
+    "owner": "Анна П.",
+    "ownerPhone": "+7 900 000-10-10",
+    "status": "active",
+    "note": "Сменили колёса в ноябре",
+    "serviceOwner": "",
+    "servicePhone": ""
+  },
+  {
+    "id": "demo-b2",
+    "name": "Погрузчик Atlas",
+    "serial": "INV-2024-102",
+    "location": "Цех 1 / Ремзона",
+    "owner": "Игорь К.",
+    "ownerPhone": "+7 900 000-10-11",
+    "status": "idle",
+    "note": "Замена гидравлики, ждём запчасти",
+    "serviceOwner": "",
+    "servicePhone": ""
+  },
+  {
+    "id": "demo-c3",
+    "name": "Робот-помощник Still",
+    "serial": "INV-2024-210",
+    "location": "Склад / Док 4",
+    "owner": "Елена С.",
+    "ownerPhone": "+7 900 000-10-12",
+    "status": "idle",
+    "note": "",
+    "serviceOwner": "",
+    "servicePhone": ""
+  }
+]

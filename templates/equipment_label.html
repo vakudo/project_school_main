@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Наклейка оборудования</title>
+  <style>
+    :root { font-family: "Space Grotesk", "Inter", system-ui, -apple-system, sans-serif; }
+    body {
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f7f8fb;
+    }
+    .label {
+      width: 320px;
+      height: 190px;
+      padding: 12px 14px;
+      background: #fff;
+      border: 2px solid #0f172a;
+      border-radius: 10px;
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 10px;
+      box-sizing: border-box;
+    }
+    .label h1 { font-size: 15px; margin: 0 0 6px; line-height: 1.2; }
+    .meta { font-size: 12px; line-height: 1.4; }
+    .muted { color: #6c7280; }
+    .qr img { width: 120px; height: 120px; object-fit: contain; }
+    .footer { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; font-size: 11px; padding-top: 4px; }
+    @media print {
+      body { background: #fff; }
+      .actions { display: none; }
+      .label { box-shadow: none; border-color: #000; }
+    }
+    .actions { position: fixed; top: 12px; right: 12px; display: flex; gap: 8px; }
+    .btn {
+      border: 1px solid #0f172a;
+      background: #0f172a;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn.ghost {
+      background: #fff;
+      color: #0f172a;
+    }
+  </style>
+</head>
+<body>
+  {% if not item %}
+    <div style="padding:24px;">Наклейка недоступна: оборудование не найдено.</div>
+  {% else %}
+    <div class="actions">
+      <button class="btn" onclick="window.print()">Печать</button>
+      <a class="btn ghost" href="{{ url_for('equipment_detail', item_id=item.id) }}">Карточка</a>
+    </div>
+    <div class="label">
+      <div>
+        <h1>{{ item.name }}</h1>
+        <div class="meta"><span class="muted">Инв. №</span> {{ item.serial }}</div>
+        <div class="meta"><span class="muted">Локация</span> {{ item.location }}</div>
+        <div class="meta"><span class="muted">Ответственный</span> {{ item.owner }}{% if item.ownerPhone %} · {{ item.ownerPhone }}{% endif %}</div>
+        <div class="meta"><span class="muted">Статус</span> {{ {'active':'В работе','idle':'Свободен','repair':'Сервис'}.get(item.status, item.status) }}</div>
+      </div>
+      <div class="qr">
+        <img src="{{ item.qr_url }}" alt="QR">
+      </div>
+      <div class="footer">
+        <span>{{ item.id }}</span>
+        <span class="muted">scannable</span>
+      </div>
+    </div>
+    <script>
+      window.addEventListener('load', () => {
+        setTimeout(() => window.print(), 200);
+      });
+    </script>
+  {% endif %}
+</body>
+</html>
